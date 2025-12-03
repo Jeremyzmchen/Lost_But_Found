@@ -1,9 +1,10 @@
 """
-顾客实体 - 多顾客并行版
+顾客实体 - 多顾客并行版 (样式封装版)
 """
 
 import pygame
 import random
+import os
 from config.settings import *
 from game.ui.button import Button
 
@@ -11,13 +12,6 @@ class Customer:
     """顾客类"""
 
     def __init__(self, sought_item_type, difficulty='normal', target_x=WINDOW_WIDTH//2):
-        """
-        初始化顾客
-        Args:
-            sought_item_type: 寻找的物品类型
-            difficulty: 当前游戏难度
-            target_x: 目标站位的X坐标
-        """
         self.sought_item_type = sought_item_type
         self.item_data = ITEM_DESCRIPTIONS.get(sought_item_type, {})
         self.difficulty = difficulty
@@ -33,35 +27,33 @@ class Customer:
         self.wait_time = 0
         self.patience = 1.0
 
-        # --- 位置与运动 ---
+        # 位置与运动
         self.x = target_x
-        self.y = -200  # 起始位置
-        self.target_y = CUSTOMER_Y # 120
+        self.y = -100
+        self.target_y = CUSTOMER_Y
         self.speed = 300
 
         self.state = 'walking_in'
+
+        # 资源加载
         self.image = None
-        self._load_image()
+        self.bubble_image = None
+        self._load_resources()
+
         self.dialog_visible = False
 
-        self.font = pygame.font.Font(None, 24)
-        self.font_small = pygame.font.Font(None, 20)
+        self.font = pygame.font.Font(FONT_PATH, 24)
+        self.font_small = pygame.font.Font(FONT_PATH, 20)
 
-        # --- [新增] 自带拒绝按钮 ---
-        # 按钮位置会在 update 里根据顾客位置动态更新
-        self.reject_button = Button(0, 0, 60, 40, "NO", None)
-        # 标记该顾客是否应被移除
-        self.should_leave = False
-        # 记录离开原因 (timeout, wrong, correct, reject)
-        self.leave_reason = None
+        # --- [修改] 使用封装好的灰色样式 ---
+        # 直接传入 style='grey'，不需要手动设颜色了
+        self.reject_button = Button(0, 0, 150, 35, "Don't Have", None, style='grey')
 
     @property
     def is_arrived(self):
         return self.state == 'waiting'
 
     def get_delivery_rect(self):
-        """获取交付区域 (用于判断物品拖拽)"""
-        # 以顾客为中心的一个区域
         return pygame.Rect(self.x - 100, self.y - 100, 200, 250)
 
     def _generate_description(self):
@@ -77,23 +69,32 @@ class Customer:
         ]
         return random.choice(descriptions)
 
-    def _load_image(self):
+    def _load_resources(self):
+        # 1. 加载顾客
         try:
-            customer_images = ['customer_1', 'customer_2', 'customer_3']
+            customer_images = [
+                'npc_1', 'npc_2', 'npc_3', 'npc_4',
+                'npc_5', 'npc_6', 'npc_7', 'npc_8',
+                'npc_9', 'npc_10', 'npc_11', 'npc_12']
             image_key = random.choice(customer_images)
             if image_key in ASSETS:
-                image_path = ASSETS[image_key]
-                self.image = pygame.image.load(image_path)
-                self.image = pygame.transform.scale(self.image, (250, 250)) #稍微缩小一点适应多人
-                return
-        except Exception: pass
+                self.image = pygame.image.load(ASSETS[image_key])
+                self.image = pygame.transform.scale(self.image, (375, 470))
+        except: pass
 
-        self.image = pygame.Surface((100, 100))
-        self.image.fill((150, 150, 200))
-        pygame.draw.circle(self.image, (255, 200, 150), (50, 50), 40)
+        if not self.image:
+            self.image = pygame.Surface((100, 100))
+            self.image.fill((150, 150, 200))
+            pygame.draw.circle(self.image, (255, 200, 150), (50, 50), 40)
+
+        # 2. 加载气泡背景
+        try:
+            bubble_path = 'assets/images/icons/bubble_box.png'
+            if os.path.exists(bubble_path):
+                self.bubble_image = pygame.image.load(bubble_path)
+        except: pass
 
     def update(self, dt):
-        """更新顾客状态"""
         if self.state == 'walking_in':
             self.y += self.speed * dt
             if self.y >= self.target_y:
@@ -105,10 +106,19 @@ class Customer:
             self.wait_time += dt
             self.patience = max(0, 1.0 - (self.wait_time / self.max_wait_time))
 
-            # 更新按钮位置 (放在对话框右下角)
-            dialog_x = self.x - 120
-            dialog_y = 200
-            self.reject_button.rect.topleft = (dialog_x + 180, dialog_y + 70)
+            # --- [修改] 更新按钮位置 (正下方居中) ---
+            dialog_width = 240
+            dialog_height = 120
+
+            # 气泡底部Y = 顾客头顶Y + 气泡高度
+            bubble_bottom_y = 200 + dialog_height
+
+            # 按钮居中：顾客X - 按钮宽的一半
+            btn_x = self.x - self.reject_button.rect.width // 2
+            # 按钮位置：气泡底部 + 5像素间距
+            btn_y = bubble_bottom_y + 5
+
+            self.reject_button.rect.topleft = (btn_x, btn_y)
             self.reject_button.update(pygame.mouse.get_pos())
 
     def is_timeout(self):
@@ -118,8 +128,8 @@ class Customer:
         return item.item_type == self.sought_item_type
 
     def get_patience_color(self):
-        if self.patience > 0.6: return COLOR_GREEN
-        elif self.patience > 0.3: return COLOR_YELLOW
+        if self.patience > 0.6: return COLOR_BLUE
+        elif self.patience > 0.3: return COLOR_ORANGE
         else: return COLOR_RED
 
     def render(self, screen):
@@ -127,40 +137,44 @@ class Customer:
             image_rect = self.image.get_rect(center=(self.x, self.y))
             screen.blit(self.image, image_rect)
 
-        # 调试：绘制交付区域框
-        # pygame.draw.rect(screen, (0, 255, 0), self.get_delivery_rect(), 1)
-
         if self.dialog_visible:
-            # 对话框稍微做小一点，适配3个并排
-            dialog_width = 240
-            dialog_height = 120
+            # 定义对话框大小
+            dialog_width = 268
+            dialog_height = 135
             dialog_x = self.x - dialog_width // 2
-            dialog_y = 200
+            dialog_y = 205
 
-            # 气泡背景
-            pygame.draw.rect(screen, COLOR_WHITE, (dialog_x, dialog_y, dialog_width, dialog_height), border_radius=10)
-            pygame.draw.rect(screen, COLOR_BLACK, (dialog_x, dialog_y, dialog_width, dialog_height), 2, border_radius=10)
+            # --- 绘制背景 ---
+            if self.bubble_image:
+                bubble_scaled = pygame.transform.scale(self.bubble_image, (dialog_width, dialog_height))
+                screen.blit(bubble_scaled, (dialog_x, dialog_y))
+            else:
+                pygame.draw.rect(screen, COLOR_WHITE, (dialog_x, dialog_y, dialog_width, dialog_height), border_radius=10)
+                pygame.draw.rect(screen, COLOR_BLACK, (dialog_x, dialog_y, dialog_width, dialog_height), 2, border_radius=10)
 
-            # 文字
-            lines = self._wrap_text(self.description, self.font, dialog_width - 20)
-            y_offset = dialog_y + 15
-            for line in lines:
+            # --- 绘制文字 (垂直居中) ---
+            lines = self._wrap_text(self.description, self.font, dialog_width - 30)
+            line_height = 25
+            total_text_height = len(lines) * line_height
+            content_area_height = dialog_height - 30
+            text_start_y = dialog_y + (content_area_height - total_text_height) // 2 + 5
+
+            for i, line in enumerate(lines):
                 text = self.font.render(line, True, COLOR_BLACK)
-                text_rect = text.get_rect(centerx=dialog_x + dialog_width//2, y=y_offset)
+                text_rect = text.get_rect(centerx=dialog_x + dialog_width//2, top=text_start_y + i * line_height)
                 screen.blit(text, text_rect)
-                y_offset += 25
 
-            # 耐心条
-            bar_w = dialog_width - 80 # 留出按钮位置
-            bar_x = dialog_x + 10
-            bar_y = dialog_y + dialog_height - 20
+            # --- 绘制耐心条 ---
+            bar_w = dialog_width - 100
+            bar_x = dialog_x + 45
+            bar_y = dialog_y + dialog_height - 35
 
-            pygame.draw.rect(screen, COLOR_DARK_GRAY, (bar_x, bar_y, bar_w, 10), border_radius=5)
+            pygame.draw.rect(screen, COLOR_DARK_GRAY, (bar_x, bar_y, bar_w, 10), border_radius=4)
             fill = int(bar_w * self.patience)
             if fill > 0:
-                pygame.draw.rect(screen, self.get_patience_color(), (bar_x, bar_y, fill, 10), border_radius=5)
+                pygame.draw.rect(screen, self.get_patience_color(), (bar_x, bar_y, fill, 10), border_radius=4)
 
-            # 绘制自带的拒绝按钮
+            # --- 绘制按钮 ---
             self.reject_button.render(screen)
 
     def _wrap_text(self, text, font, max_width):

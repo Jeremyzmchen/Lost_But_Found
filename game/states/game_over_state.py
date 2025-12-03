@@ -1,117 +1,105 @@
 """
-游戏结束状态 - 显示结算界面
+游戏结算状态 - 单局结算版 (去除了 Restart 功能)
 """
 
 import pygame
+import sys
 from config.settings import *
 from game.ui.button import Button
 
 class GameOverState:
-    """游戏结束状态 - 显示当天工作总结"""
+    """结算状态"""
 
     def __init__(self, game_manager):
         self.game_manager = game_manager
-        self.money = 0
-        self.day = 0
 
-        # 字体
-        self.font_title = pygame.font.Font(None, 64)
-        self.font_large = pygame.font.Font(None, 48)
-        self.font_medium = pygame.font.Font(None, 36)
+        # 获取了 money 数据进行结算显示
+        self.money = self.game_manager.game_data.get('money', 0)
 
-        # 按钮
-        self.continue_button = Button(
-            WINDOW_WIDTH // 2 - 150, 500, 300, 70,
-            "Next Day",
-            self._continue_game
-        )
+        #加载了背景图片(_load_background) 和字体
+        self.font_title = pygame.font.Font(FONT_PATH, 80)
+        self.font_text = pygame.font.Font(FONT_PATH, 40)
+        self.background = None
+        self._load_background()
+        center_x = WINDOW_WIDTH // 2
+        start_y = 500
+        spacing = 80
 
-        self.menu_button = Button(
-            WINDOW_WIDTH // 2 - 150, 600, 300, 70,
-            "Main Menu",
-            self._return_to_menu
-        )
+        # [修改] 移除了 Restart 按钮，只保留 Main Menu 和 Quit
 
-    def _continue_game(self):
-        """继续游戏（进入下一天）"""
-        # 这里可以增加天数，重新开始游戏
-        new_day = self.day + 1
-        self.game_manager.change_state(
-            self.game_manager.GameState.GAMEPLAY,
-            difficulty=self.game_manager.get_game_data('difficulty', 'normal'),
-            day=new_day,
-            money=self.money
-        )
+        # 1. 回到主菜单
+        self.btn_menu = Button(center_x - 120, start_y, 240, 60, "MAIN MENU", self._to_main_menu)
 
-    def _return_to_menu(self):
-        """返回主菜单"""
-        self.game_manager.change_state(self.game_manager.GameState.MENU)
+        # 2. 退出游戏
+        self.btn_quit = Button(center_x - 120, start_y + spacing, 240, 60, "QUIT", self._quit_game)
 
+    def _load_background(self):
+        try:
+            bg_path = ASSETS.get('bg_menu')
+            if bg_path:
+                self.background = pygame.image.load(bg_path)
+                self.background = pygame.transform.scale(self.background, (WINDOW_WIDTH, WINDOW_HEIGHT))
+                dark = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+                dark.fill((0, 0, 0))
+                dark.set_alpha(180)
+                self.background.blit(dark, (0,0))
+        except:
+            self.background = None
+
+    def _to_main_menu(self):
+        """回到主菜单"""
+        from game.game_manager import GameState
+        self.game_manager.change_state(GameState.MENU)
+
+    def _quit_game(self):
+        """退出程序"""
+        pygame.quit()
+        sys.exit()
+
+    """
+    GameOverState 是在游戏刚启动时（__init__ 里）就被创建出来的。
+    这意味着 GameOverState 的 __init__ 只会在程序启动时运行一次。
+    此时，你的 self.money 是 0。
+    数据需要刷新： 当你玩完第一局，赚了 $500，游戏切换到结算界面。
+    如果有 enter：系统会告诉结算界面：“嘿，这局赚了 $500，快更新显示！” -> 界面显示 $500。
+    如果没有 enter：结算界面还是维持着初始化时的状态 -> 界面永远显示 $0。
+    """
     def enter(self, **kwargs):
-        """进入游戏结束状态"""
-        self.money = kwargs.get('money', 0)
-        self.day = kwargs.get('day', 1)
+        if 'money' in kwargs: self.money = kwargs['money']
+        if 'difficulty' in kwargs: self.difficulty = kwargs['difficulty']
 
     def exit(self):
-        """退出游戏结束状态"""
         pass
 
     def handle_event(self, event):
-        """处理事件"""
         if event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
-            self.continue_button.handle_click(mouse_pos)
-            self.menu_button.handle_click(mouse_pos)
+            # [修改] 移除了 btn_restart 的检测
+            self.btn_menu.handle_click(mouse_pos)
+            self.btn_quit.handle_click(mouse_pos)
 
     def update(self, dt):
-        """更新状态"""
         mouse_pos = pygame.mouse.get_pos()
-        self.continue_button.update(mouse_pos)
-        self.menu_button.update(mouse_pos)
+        # [修改] 移除了 btn_restart 的更新
+        self.btn_menu.update(mouse_pos)
+        self.btn_quit.update(mouse_pos)
 
     def render(self, screen):
-        """渲染结束界面"""
-        # 背景
-        screen.fill(COLOR_DARK_GRAY)
-
-        # 标题
-        title_text = self.font_title.render("Shift Complete!", True, COLOR_WHITE)
-        title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, 100))
-        screen.blit(title_text, title_rect)
-
-        # 天数
-        day_text = self.font_large.render(f"Day {self.day}", True, COLOR_YELLOW)
-        day_rect = day_text.get_rect(center=(WINDOW_WIDTH // 2, 200))
-        screen.blit(day_text, day_rect)
-
-        # 金钱
-        money_label = self.font_medium.render("Today's Earnings:", True, COLOR_WHITE)
-        money_label_rect = money_label.get_rect(center=(WINDOW_WIDTH // 2, 280))
-        screen.blit(money_label, money_label_rect)
-
-        money_color = COLOR_GREEN if self.money > 0 else COLOR_RED
-        money_text = self.font_large.render(f"${self.money}", True, money_color)
-        money_rect = money_text.get_rect(center=(WINDOW_WIDTH // 2, 340))
-        screen.blit(money_text, money_rect)
-
-        # 评价
-        if self.money > 500:
-            evaluation = "Excellent!"
-            eval_color = COLOR_GREEN
-        elif self.money > 200:
-            evaluation = "Good Job!"
-            eval_color = COLOR_YELLOW
-        elif self.money > 0:
-            evaluation = "Keep Trying"
-            eval_color = COLOR_ORANGE
+        if self.background:
+            screen.blit(self.background, (0, 0))
         else:
-            evaluation = "Need Improvement..."
-            eval_color = COLOR_RED
+            screen.fill(COLOR_DARK_GRAY)
 
-        eval_text = self.font_medium.render(evaluation, True, eval_color)
-        eval_rect = eval_text.get_rect(center=(WINDOW_WIDTH // 2, 410))
-        screen.blit(eval_text, eval_rect)
+        center_x = WINDOW_WIDTH // 2
 
-        # 按钮
-        self.continue_button.render(screen)
-        self.menu_button.render(screen)
+        title = self.font_title.render("SHIFT COMPLETE", True, COLOR_GREEN)
+        title_rect = title.get_rect(center=(center_x, 180))
+        screen.blit(title, title_rect)
+
+        score_txt = self.font_title.render(f"${self.money}", True, COLOR_YELLOW)
+        score_rect = score_txt.get_rect(center=(center_x, 330))
+        screen.blit(score_txt, score_rect)
+
+        # [修改] 只渲染剩下的两个按钮
+        self.btn_menu.render(screen)
+        self.btn_quit.render(screen)

@@ -1,49 +1,70 @@
 """
-UI按钮组件
+UI按钮组件 (支持多种样式：标准、灰色、红色、透明)
 """
 
 import pygame
-from config.settings import COLOR_WHITE, COLOR_BLACK, COLOR_BLUE, COLOR_GRAY
+from config.settings import COLOR_WHITE, COLOR_BLACK, COLOR_BLUE
 
 class Button:
     """可点击的按钮UI组件"""
 
-    def __init__(self, x, y, width, height, text, callback, callback_arg=None):
+    def __init__(self, x, y, width, height, text, callback, callback_arg=None, style='primary'):
         """
         初始化按钮
-
-        Args:
-            x, y: 按钮位置
-            width, height: 按钮尺寸
-            text: 按钮文字
-            callback: 点击回调函数
-            callback_arg: 传递给回调函数的参数
+        style: 'primary'(蓝), 'grey'(灰), 'danger'(红), 'transparent'(透明文字)
         """
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
         self.callback = callback
         self.callback_arg = callback_arg
 
-        # 状态
         self.is_hovered = False
         self.is_pressed = False
 
-        # 颜色
-        self.color_normal = COLOR_BLUE
-        self.color_hover = (120, 170, 255)
-        self.color_pressed = (80, 130, 255)
-        self.text_color = COLOR_WHITE
+        # 字体 (请确保 settings.py 里定义了 FONT_PATH，否则这里用 None)
+        try:
+            from config.settings import FONT_PATH
+            self.font = pygame.font.Font(FONT_PATH, 36)
+        except:
+            self.font = pygame.font.Font(None, 36)
 
-        # 字体
-        self.font = pygame.font.Font(None, 36)
+        self.apply_style(style)
+
+    def apply_style(self, style):
+        """根据样式名设置颜色和边框"""
+        self.border_width = 2 # 默认有边框
+
+        if style == 'transparent':
+            # [新增] 透明风格：平常完全透明，悬停微亮
+            self.color_normal = (0, 0, 0, 0)      # 完全透明
+            self.color_hover = (255, 255, 255, 30) # 悬停时淡淡白光
+            self.color_pressed = (255, 255, 255, 60)
+            self.text_color = COLOR_WHITE
+            self.border_width = 0 # 无边框
+
+        elif style == 'grey':
+            # 灰色风格 (用于拒绝按钮)
+            self.color_normal = (60, 60, 60)
+            self.color_hover = (180, 180, 180)
+            self.color_pressed = (30, 30, 30)
+            self.text_color = COLOR_WHITE
+            self.border_width = 0
+
+        elif style == 'danger':
+            # 红色风格
+            self.color_normal = (200, 60, 60)
+            self.color_hover = (230, 80, 80)
+            self.color_pressed = (150, 40, 40)
+            self.text_color = COLOR_WHITE
+
+        else:
+            # 默认蓝色风格 (primary)
+            self.color_normal = COLOR_BLUE
+            self.color_hover = (120, 170, 255)
+            self.color_pressed = (80, 130, 255)
+            self.text_color = COLOR_WHITE
 
     def handle_click(self, mouse_pos):
-        """
-        处理鼠标点击
-
-        Args:
-            mouse_pos: 鼠标位置元组 (x, y)
-        """
         if self.rect.collidepoint(mouse_pos):
             if self.callback:
                 if self.callback_arg is not None:
@@ -54,22 +75,10 @@ class Button:
         return False
 
     def update(self, mouse_pos):
-        """
-        更新按钮状态
-
-        Args:
-            mouse_pos: 鼠标位置元组 (x, y)
-        """
         self.is_hovered = self.rect.collidepoint(mouse_pos)
 
     def render(self, screen):
-        """
-        渲染按钮
-
-        Args:
-            screen: Pygame屏幕对象
-        """
-        # 选择颜色
+        # 1. 确定背景色
         if self.is_pressed:
             color = self.color_pressed
         elif self.is_hovered:
@@ -77,11 +86,20 @@ class Button:
         else:
             color = self.color_normal
 
-        # 绘制按钮背景
-        pygame.draw.rect(screen, color, self.rect, border_radius=10)
-        pygame.draw.rect(screen, COLOR_BLACK, self.rect, 3, border_radius=10)
+        # 2. 绘制背景 (支持透明度)
+        # 如果是 (R, G, B, A) 格式，或者就是透明样式
+        if len(color) == 4:
+            s = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+            pygame.draw.rect(s, color, s.get_rect(), border_radius=8)
+            screen.blit(s, self.rect.topleft)
+        else:
+            pygame.draw.rect(screen, color, self.rect, border_radius=8)
 
-        # 绘制文字
-        text_surface = self.font.render(self.text, True, self.text_color)
-        text_rect = text_surface.get_rect(center=self.rect.center)
-        screen.blit(text_surface, text_rect)
+        # 3. 绘制边框 (如果有)
+        if self.border_width > 0:
+            pygame.draw.rect(screen, COLOR_WHITE, self.rect, self.border_width, border_radius=8)
+
+        # 4. 绘制文字
+        text_surf = self.font.render(self.text, True, self.text_color)
+        text_rect = text_surf.get_rect(center=self.rect.center)
+        screen.blit(text_surf, text_rect)

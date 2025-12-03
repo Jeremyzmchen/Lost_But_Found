@@ -5,8 +5,9 @@
 # 窗口设置
 WINDOW_WIDTH = 1600
 WINDOW_HEIGHT = 900
+# FPS = 60 决定了游戏每秒刷新60次
 FPS = 60
-WINDOW_TITLE = "Lost & Found Office"
+WINDOW_TITLE = "Lost but Found"
 
 # 颜色
 COLOR_WHITE = (255, 255, 255)
@@ -19,37 +20,40 @@ COLOR_RED = (255, 100, 100)
 COLOR_YELLOW = (255, 255, 100)
 COLOR_ORANGE = (255, 165, 0)
 
+# 字体
+FONT_PATH = 'assets/fonts/game_font.ttf'
+
 # 难度设置
 DIFFICULTY_SETTINGS = {
-    'chill': {'name': 'Chill', 'customer_interval': 30.0, 'time_pressure': False, 'items_per_wave': 3},
-    'relax': {'name': 'Relax', 'customer_interval': 20.0, 'time_pressure': False, 'items_per_wave': 5},
-    'normal': {'name': 'Normal', 'customer_interval': 15.0, 'time_pressure': True, 'items_per_wave': 7},
-    'mayhem': {'name': 'Mayhem', 'customer_interval': 8.0, 'time_pressure': True, 'items_per_wave': 10}
+    'chill': {'name': 'Chill', 'customer_interval': 30.0, 'time_pressure': False},
+    'relax': {'name': 'Relax', 'customer_interval': 20.0, 'time_pressure': False},
+    'normal': {'name': 'Normal', 'customer_interval': 15.0, 'time_pressure': True},
+    'mayhem': {'name': 'Mayhem', 'customer_interval': 8.0, 'time_pressure': True}
 }
 
 # ========== 传送带设置 ==========
-CONVEYOR_SPEED = 80
+CONVEYOR_SPEED = 450
 CONVEYOR_PAUSE_DURATION = 3.0
-CONVEYOR_PAUSE_TRIGGER_Y = 470
+CONVEYOR_PAUSE_TRIGGER_Y = 420
 
 CONVEYOR_PATH = [
     (-400, 350), (120, 350), (180, 380), (180, 580),
     (180, 580), (180, 750), (150, 800), (-400, 800),
 ]
 
-CONVEYOR_PAUSE_AT_INDEX = 4
-ITEM_SPAWN_INTERVAL = 20.0
+CONVEYOR_PAUSE_AT_INDEX = 2
+ITEM_SPAWN_INTERVAL = 10.0
 ITEMS_PER_BATCH = 3
 ITEM_VERTICAL_OFFSETS = [70, 0, -70]
 
 # 区域定义
+# 物品被拖到这里时，属于“已整理”，会被物理引擎接管（挤开效果）。
 CONVEYOR_AREA = {'x': 20, 'y': 280, 'width': 240, 'height': 450}
-DESK_AREA = {'x': 270, 'y': 230, 'width': 1150, 'height': 520}
-STORAGE_AREA = {'x': 1200, 'y': 230, 'width': 240, 'height': 520}
+DESK_AREA = {'x': 270, 'y': 350, 'width': 1300, 'height': 500}
 
 # [修改] 移除旧的 CUSTOMER_DELIVERY_AREA，改用多窗口配置
 # 定义 3 个顾客站位 (X坐标)
-CUSTOMER_SLOTS = [500, 800, 1100]
+CUSTOMER_SLOTS = [750, 1050, 1350]
 CUSTOMER_Y = 120
 
 # 物品设置
@@ -57,8 +61,8 @@ ITEM_SIZE = (100, 100)
 ITEM_GRID_SIZE = 130
 
 # 顾客设置
-CUSTOMER_WAIT_TIME = 60.0
-CUSTOMER_PATIENCE_WARNING = 20.0
+CUSTOMER_WAIT_TIME = 20.0
+CUSTOMER_PATIENCE_WARNING = 10.0
 
 # 奖惩
 REWARD_CORRECT = 60
@@ -67,11 +71,20 @@ PENALTY_TIMEOUT = -50
 
 # 资源路径 (保持不变)
 ASSETS = {
-    'bg_main': 'assets/images/background_office.png',
+    'bg_main': 'assets/images/background_game.png',
     'bg_menu': 'assets/images/background_menu.png',
-    'customer_1': 'assets/images/customer_happy.png',
-    'customer_2': 'assets/images/customer_worried.png',
-    'customer_3': 'assets/images/customer_angry.png',
+    'npc_1': 'assets/images/npc_1.png',
+    'npc_2': 'assets/images/npc_2.png',
+    'npc_3': 'assets/images/npc_3.png',
+    'npc_4': 'assets/images/npc_4.png',
+    'npc_5': 'assets/images/npc_5.png',
+    'npc_6': 'assets/images/npc_6.png',
+    'npc_7': 'assets/images/npc_7.png',
+    'npc_8': 'assets/images/npc_8.png',
+    'npc_9': 'assets/images/npc_9.png',
+    'npc_10': 'assets/images/npc_10.png',
+    'npc_11': 'assets/images/npc_11.png',
+    'npc_12': 'assets/images/npc_12.png',
     'item_suitcase_orange': 'assets/images/items/suitcase_orange.png',
     'item_suitcase_black': 'assets/images/items/suitcase_black.png',
     'item_passport': 'assets/images/items/passport.png',

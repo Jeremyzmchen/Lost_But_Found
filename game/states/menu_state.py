@@ -1,5 +1,5 @@
 """
-主菜单状态 - 游戏开始界面 (专注 Normal 模式版)
+主菜单状态 (极简版：单层菜单 + 透明按钮)
 """
 
 import pygame
@@ -14,30 +14,35 @@ class MenuState:
         self.game_manager = game_manager
 
         # 字体设置
-        self.font_title = pygame.font.Font(None, 80)
-        self.font_subtitle = pygame.font.Font(None, 32)
-        self.font_version = pygame.font.Font(None, 24)
+        # 尝试使用自定义字体，失败则回退默认
+        try:
+            self.font_title = pygame.font.Font(FONT_PATH, 80)
+            self.font_subtitle = pygame.font.Font(FONT_PATH, 40)
+        except:
+            self.font_title = pygame.font.Font(None, 80)
+            self.font_subtitle = pygame.font.Font(None, 40)
 
         # 背景图片
         self.background = None
-        self._load_background()
+        try:
+            bg_path = ASSETS.get('bg_menu')
+            if bg_path:
+                self.background = pygame.image.load(bg_path)
+                self.background = pygame.transform.scale(self.background, (WINDOW_WIDTH, WINDOW_HEIGHT))
+        except:
+            self.background = None
 
-        # 当前视图状态: 'main' (主菜单) 或 'difficulty' (难度选择)
-        self.current_view = 'main'
-
-        # 按钮通用配置
+        # 按钮布局参数
         self.btn_width = 260
         self.btn_height = 60
-        # 将菜单放在屏幕右侧 75% 的位置
         self.menu_x = int(WINDOW_WIDTH * 0.75) - (self.btn_width // 2)
-        self.start_y = 350 # 按钮起始高度
-        self.spacing = 80  # 按钮间距
+        self.start_y = 350
+        self.spacing = 70
 
-        # --- 初始化两组按钮 ---
-        self.main_menu_buttons = self._create_main_menu_buttons()
-        self.difficulty_buttons = self._create_difficulty_buttons()
+        # 初始化按钮
+        self.buttons = self._create_buttons()
 
-        # 播放菜单音乐
+        # 播放音乐
         self._play_menu_music()
 
     def _play_menu_music(self):
@@ -45,27 +50,18 @@ class MenuState:
             pygame.mixer.music.load('assets/sounds/bgm_menu.mp3')
             pygame.mixer.music.set_volume(0.3)
             pygame.mixer.music.play(-1)
-        except:
-            pass
+        except: pass
 
-    def _load_background(self):
-        """加载背景图片"""
-        try:
-            bg_path = ASSETS.get('bg_menu')
-            if bg_path:
-                self.background = pygame.image.load(bg_path)
-                self.background = pygame.transform.scale(self.background, (WINDOW_WIDTH, WINDOW_HEIGHT))
-        except Exception as e:
-            self.background = None
-
-    def _create_main_menu_buttons(self):
-        """创建主界面的按钮"""
+    def _create_buttons(self):
+        """创建按钮并应用透明样式"""
         buttons = []
-        # 主菜单选项：除了开始和退出，其他都是装饰
+
+        # 定义按钮：显示文本 -> 回调函数
+        # 点击 NEW GAME 直接开始 Normal 难度游戏
         options = [
-            ("NEW GAME", self._to_difficulty_select),
+            ("NEW GAME", self._start_game),
             ("LEADERBOARD", self._placeholder_action),
-            ("STORE", self._placeholder_action),     # 新增：商店入口占位
+            ("STORE", self._placeholder_action),
             ("SETTINGS", self._placeholder_action),
             ("QUIT GAME", self._quit_game)
         ]
@@ -74,88 +70,39 @@ class MenuState:
             y = self.start_y + i * self.spacing
             btn = Button(self.menu_x, y, self.btn_width, self.btn_height, text, func)
 
-            # 将未开发的功能按钮设为灰色，避免误点
+            # --- 手动设置透明样式 ---
+            # 正常状态：完全透明
+            btn.color_normal = (0, 0, 0, 0)
+            # 悬停状态：淡淡的白色半透明
+            btn.color_hover = (255, 255, 255, 30)
+            # 按下状态：稍微亮一点
+            btn.color_pressed = (255, 255, 255, 60)
+
+            btn.text_color = COLOR_WHITE
+            btn.border_width = 0 # 去掉边框
+
+            # 禁用未开放的功能 (变灰且不可点)
             if text in ["LEADERBOARD", "STORE", "SETTINGS"]:
-                self._disable_button(btn)
+                btn.text_color = (150, 150, 150) # 灰字
+                btn.callback = None # 禁用回调
 
             buttons.append(btn)
 
         return buttons
 
-    def _create_difficulty_buttons(self):
-        """创建难度选择界面的按钮"""
-        buttons = []
-
-        # 难度选项
-        diff_keys = ['chill', 'relax', 'normal', 'mayhem']
-        for i, diff in enumerate(diff_keys):
-            y = self.start_y + i * self.spacing
-            name = DIFFICULTY_SETTINGS[diff]['name'].upper()
-
-            if diff == 'normal':
-                # ✅ 只有 NORMAL 模式是可用的
-                btn = Button(
-                    self.menu_x, y, self.btn_width, self.btn_height,
-                    name,
-                    self._start_game,
-                    diff
-                )
-            else:
-                # 🚫 其他模式暂时锁定 (变灰，点击无效)
-                btn = Button(
-                    self.menu_x, y, self.btn_width, self.btn_height,
-                    name,
-                    self._placeholder_action
-                )
-                self._disable_button(btn)
-
-            buttons.append(btn)
-
-        # 添加一个返回按钮在最后
-        back_y = self.start_y + len(diff_keys) * self.spacing + 20
-        back_btn = Button(self.menu_x, back_y, self.btn_width, self.btn_height, "BACK", self._to_main_menu)
-        buttons.append(back_btn)
-
-        return buttons
-
-    def _disable_button(self, btn):
-        """辅助函数：将按钮设为禁用样式"""
-        disabled_color = (60, 60, 60) # 深灰色背景
-        disabled_text = (150, 150, 150) # 暗灰色文字
-
-        btn.color_normal = disabled_color
-        btn.color_hover = disabled_color # 悬停不变色
-        btn.color_pressed = disabled_color
-        btn.text_color = disabled_text
-
-    # --- 回调函数 ---
-
-    def _to_difficulty_select(self):
-        """切换到难度选择视图"""
-        self.current_view = 'difficulty'
-
-    def _to_main_menu(self):
-        """切换回主菜单视图"""
-        self.current_view = 'main'
-
-    def _start_game(self, difficulty):
-        """开始游戏"""
+    def _start_game(self):
+        """直接开始游戏"""
         from game.game_manager import GameState
-        self.game_manager.change_state(
-            GameState.GAMEPLAY,
-            difficulty=difficulty
-        )
+        self.game_manager.change_state(GameState.GAMEPLAY, difficulty='normal')
 
     def _quit_game(self):
-        """退出游戏"""
         pygame.quit()
         sys.exit()
 
     def _placeholder_action(self):
-        """占位符，点击没反应"""
         pass
 
-    # --- 状态机标准方法 ---
+    # --- 状态机标准接口 ---
 
     def enter(self, **kwargs):
         pass
@@ -166,52 +113,41 @@ class MenuState:
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
-
-            target_buttons = self.main_menu_buttons if self.current_view == 'main' else self.difficulty_buttons
-
-            for button in target_buttons:
-                button.handle_click(mouse_pos)
+            for btn in self.buttons:
+                btn.handle_click(mouse_pos)
 
     def update(self, dt):
         mouse_pos = pygame.mouse.get_pos()
-
-        target_buttons = self.main_menu_buttons if self.current_view == 'main' else self.difficulty_buttons
-
-        for button in target_buttons:
-            button.update(mouse_pos)
+        for btn in self.buttons:
+            btn.update(mouse_pos)
 
     def render(self, screen):
-        # 1. 绘制背景
+        # 1. 背景
         if self.background:
             screen.blit(self.background, (0, 0))
         else:
             screen.fill(COLOR_DARK_GRAY)
 
-        # 2. 绘制标题
         center_x = self.menu_x + self.btn_width // 2
+
+        # 2. 标题 (位置可调)
+        title_y = 200 # 调整这个数字改变垂直位置
 
         title_surf = self.font_title.render("Lost But Found", True, COLOR_WHITE)
         title_shadow = self.font_title.render("Lost But Found", True, COLOR_BLACK)
 
+        # 稍微旋转一点，更活泼
         title_surf = pygame.transform.rotate(title_surf, 2)
         title_shadow = pygame.transform.rotate(title_shadow, 2)
 
-        title_rect = title_surf.get_rect(center=(center_x, 150))
-        shadow_rect = title_shadow.get_rect(center=(center_x + 4, 150 + 4))
+        screen.blit(title_shadow, title_shadow.get_rect(center=(center_x + 6, title_y + 6)))
+        screen.blit(title_surf, title_surf.get_rect(center=(center_x, title_y)))
 
-        screen.blit(title_shadow, shadow_rect)
-        screen.blit(title_surf, title_rect)
+        # 3. 副标题
+        subtitle_y = title_y + 70
+        prompt = self.font_subtitle.render("v1.0.3-dev", True, (200, 200, 200))
+        screen.blit(prompt, prompt.get_rect(center=(center_x, subtitle_y)))
 
-        # 3. 绘制提示
-        if self.current_view == 'difficulty':
-            prompt = self.font_subtitle.render("- Select Difficulty -", True, COLOR_YELLOW)
-        else:
-            prompt = self.font_subtitle.render("v1.0.3-dev", True, (200, 200, 200))
-
-        prompt_rect = prompt.get_rect(center=(center_x, 220))
-        screen.blit(prompt, prompt_rect)
-
-        # 4. 绘制按钮
-        target_buttons = self.main_menu_buttons if self.current_view == 'main' else self.difficulty_buttons
-        for button in target_buttons:
-            button.render(screen)
+        # 4. 按钮
+        for btn in self.buttons:
+            btn.render(screen)
