@@ -15,7 +15,6 @@ class InventoryManager:
 
     def add_item_to_desk(self, item):
         item.in_storage = False
-        item.va = random.uniform(-0.2, 0.2)
         self.desk_items.append(item)
 
     def remove_item(self, item):
@@ -43,6 +42,7 @@ class InventoryManager:
         for item in self.desk_items:
             item.render(screen)
 
+    # TODO (THIS PART: AI PROCESS)
     def update(self, dt):
         """物理更新 (沉重手感)"""
         # 1. 位置更新

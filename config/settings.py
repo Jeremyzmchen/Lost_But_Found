@@ -23,13 +23,9 @@ COLOR_ORANGE = (255, 165, 0)
 # 字体
 FONT_PATH = 'assets/fonts/game_font.ttf'
 
-# 难度设置
-DIFFICULTY_SETTINGS = {
-    'chill': {'name': 'Chill', 'customer_interval': 30.0, 'time_pressure': False},
-    'relax': {'name': 'Relax', 'customer_interval': 20.0, 'time_pressure': False},
-    'normal': {'name': 'Normal', 'customer_interval': 15.0, 'time_pressure': True},
-    'mayhem': {'name': 'Mayhem', 'customer_interval': 8.0, 'time_pressure': True}
-}
+# --- 游戏核心参数 (统一模式) ---
+# 移除了 DIFFICULTY_SETTINGS，合并为以下常量
+CUSTOMER_INTERVAL = 5.0      # 顾客生成间隔(秒)
 
 # ========== 传送带设置 ==========
 CONVEYOR_SPEED = 450
@@ -61,18 +57,20 @@ ITEM_SIZE = (100, 100)
 ITEM_GRID_SIZE = 130
 
 # 顾客设置
-CUSTOMER_WAIT_TIME = 20.0
+CUSTOMER_WAIT_TIME = 25.0    # 顾客基础等待时间(秒)
 CUSTOMER_PATIENCE_WARNING = 10.0
 
-# 奖惩
-REWARD_CORRECT = 60
-PENALTY_WRONG = -30
-PENALTY_TIMEOUT = -50
+# 经济系统
+REWARD_CORRECT = 100
+PENALTY_WRONG = -50
+PENALTY_TIMEOUT = -20
+
 
 # 资源路径 (保持不变)
 ASSETS = {
     'bg_main': 'assets/images/background_game.png',
     'bg_menu': 'assets/images/background_menu.png',
+    'bg_game_over': 'assets/images/background_game_over.png',
     'npc_1': 'assets/images/npc_1.png',
     'npc_2': 'assets/images/npc_2.png',
     'npc_3': 'assets/images/npc_3.png',

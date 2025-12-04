@@ -1,68 +1,62 @@
-"""
-游戏HUD（Heads-Up Display）- 显示游戏信息 (倒计时修正版)
-"""
-
 import pygame
 from config.settings import *
 
+
 class HUD:
-    """游戏HUD - 显示金钱、时间等信息"""
-
     def __init__(self):
-        """初始化HUD"""
-        # 加载字体
-        try:
-            self.font_large = pygame.font.Font(FONT_PATH, 48)
-            self.font_medium = pygame.font.Font(FONT_PATH, 36)
-            self.font_small = pygame.font.Font(FONT_PATH, 28)
-        except:
-            self.font_large = pygame.font.Font(None, 48)
-            self.font_medium = pygame.font.Font(None, 36)
-            self.font_small = pygame.font.Font(None, 28)
+        self.font = pygame.font.Font(FONT_PATH, 36)
 
-    def _format_time(self, seconds):
-        """格式化时间显示 MM:SS"""
-        minutes = int(seconds // 60)
-        secs = int(seconds % 60)
-        return f"{minutes:02d}:{secs:02d}"
+        # --- 配置区域：在这里修改你想要的大小和位置 ---
 
-    def render(self, screen, money, shift_time, shift_duration):
-        """
-        渲染HUD
-        Args:
-            shift_time: 已工作时间
-            shift_duration: 班次总时长
-        """
-        # --- 1. 右上角 - 金钱显示 ---
-        money_text = self.font_large.render(f"${money}", True, COLOR_GREEN)
-        money_rect = money_text.get_rect(topright=(WINDOW_WIDTH - 20, 20))
+        # 1. 定义想要显示的尺寸 (宽, 高)
+        # 假设我们希望两个框都是 200像素宽，80像素高
+        self.hud_size = (160, 100)
 
-        # 绘制金钱背景
-        bg_rect = money_rect.inflate(20, 10)
-        pygame.draw.rect(screen, COLOR_BLACK, bg_rect, border_radius=5)
-        pygame.draw.rect(screen, COLOR_WHITE, bg_rect, 2, border_radius=5)
-        screen.blit(money_text, money_rect)
+        # 2. 定义位置 (左, 上)
+        self.time_pos = (20, 15)  # 时间框的位置
+        self.money_pos = (20, 120)  # 金钱框的位置 (手动指定，不再依赖上一张图的高度)
 
-        # --- 2. 右下角 - 倒计时显示 [修改重点] ---
+        # --- 加载并强制缩放 ---
 
-        # 计算剩余时间
-        time_left = max(0, int(shift_duration - shift_time))
+        # 加载原图
+        raw_time_img = pygame.image.load('assets/images/icons/clock.png')
+        raw_money_img = pygame.image.load('assets/images/icons/money.png')
 
-        # 颜色逻辑：最后30秒变红
-        if time_left <= 30:
-            time_color = COLOR_RED
-        else:
-            time_color = COLOR_WHITE
+        # 立即执行缩放适配 (Transform Scale)
+        self.bg_time = pygame.transform.scale(raw_time_img, self.hud_size)
+        self.bg_money = pygame.transform.scale(raw_money_img, self.hud_size)
 
-        time_text = self.font_medium.render(
-            self._format_time(time_left), # 显示剩余时间
-            True,
-            time_color
-        )
-        time_rect = time_text.get_rect(bottomright=(WINDOW_WIDTH - 20, WINDOW_HEIGHT - 20))
+    def render(self, screen, money, current_time, total_duration):
+        # 准备文字数据
+        remaining = max(0, total_duration - current_time)
+        time_str = f"{int(remaining // 60):02}:{int(remaining % 60):02}"
+        money_str = f"${int(money)}"
 
-        time_bg = time_rect.inflate(20, 10)
-        pygame.draw.rect(screen, COLOR_BLACK, time_bg, border_radius=5)
-        pygame.draw.rect(screen, time_color, time_bg, 2, border_radius=5) # 边框颜色也跟着变
-        screen.blit(time_text, time_rect)
+        # ==========================================
+        # 1. 渲染时间 HUD
+        # ==========================================
+        # 步骤 A: 画缩放后的背景图 (底层)
+        screen.blit(self.bg_time, self.time_pos)
 
+        # 步骤 B: 画文字 (顶层) - 基于图片矩形自动居中
+        # 获取图片在屏幕上的矩形区域
+        bg_rect_time = self.bg_time.get_rect(topleft=self.time_pos)
+
+        # 计算文字居中位置
+        time_surf = self.font.render(time_str, True, COLOR_WHITE)
+        time_text_rect = time_surf.get_rect(center=bg_rect_time.center)
+        screen.blit(time_surf, time_text_rect)
+
+        # ==========================================
+        # 2. 渲染金钱 HUD
+        # ==========================================
+        # 步骤 A: 画缩放后的背景图 (底层)
+        screen.blit(self.bg_money, self.money_pos)
+
+        # 步骤 B: 画文字 (顶层) - 基于图片矩形自动居中
+        bg_rect_money = self.bg_money.get_rect(topleft=self.money_pos)
+
+        color = COLOR_WHITE
+        money_surf = self.font.render(money_str, True, color)
+        money_text_rect = money_surf.get_rect(center=bg_rect_money.center)
+        screen.blit(money_surf, money_text_rect)

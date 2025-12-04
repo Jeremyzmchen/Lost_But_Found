@@ -12,25 +12,14 @@ class MenuState:
 
     def __init__(self, game_manager):
         self.game_manager = game_manager
-
-        # 字体设置
-        # 尝试使用自定义字体，失败则回退默认
-        try:
-            self.font_title = pygame.font.Font(FONT_PATH, 80)
-            self.font_subtitle = pygame.font.Font(FONT_PATH, 40)
-        except:
-            self.font_title = pygame.font.Font(None, 80)
-            self.font_subtitle = pygame.font.Font(None, 40)
+        self.font_title = pygame.font.Font(FONT_PATH, 80)
+        self.font_subtitle = pygame.font.Font(FONT_PATH, 40)
 
         # 背景图片
-        self.background = None
-        try:
-            bg_path = ASSETS.get('bg_menu')
-            if bg_path:
-                self.background = pygame.image.load(bg_path)
-                self.background = pygame.transform.scale(self.background, (WINDOW_WIDTH, WINDOW_HEIGHT))
-        except:
-            self.background = None
+        self.background = pygame.transform.scale(
+            pygame.image.load(ASSETS['bg_menu']),
+            (WINDOW_WIDTH, WINDOW_HEIGHT)
+        )
 
         # 按钮布局参数
         self.btn_width = 260
@@ -60,9 +49,6 @@ class MenuState:
         # 点击 NEW GAME 直接开始 Normal 难度游戏
         options = [
             ("NEW GAME", self._start_game),
-            ("LEADERBOARD", self._placeholder_action),
-            ("STORE", self._placeholder_action),
-            ("SETTINGS", self._placeholder_action),
             ("QUIT GAME", self._quit_game)
         ]
 
@@ -80,32 +66,17 @@ class MenuState:
 
             btn.text_color = COLOR_WHITE
             btn.border_width = 0 # 去掉边框
-
-            # 禁用未开放的功能 (变灰且不可点)
-            if text in ["LEADERBOARD", "STORE", "SETTINGS"]:
-                btn.text_color = (150, 150, 150) # 灰字
-                btn.callback = None # 禁用回调
-
             buttons.append(btn)
 
         return buttons
 
     def _start_game(self):
-        """直接开始游戏"""
         from game.game_manager import GameState
-        self.game_manager.change_state(GameState.GAMEPLAY, difficulty='normal')
+        self.game_manager.change_state(GameState.GAMEPLAY)
 
     def _quit_game(self):
         pygame.quit()
         sys.exit()
-
-    def _placeholder_action(self):
-        pass
-
-    # --- 状态机标准接口 ---
-
-    def enter(self, **kwargs):
-        pass
 
     def exit(self):
         pygame.mixer.music.stop()
@@ -142,11 +113,6 @@ class MenuState:
 
         screen.blit(title_shadow, title_shadow.get_rect(center=(center_x + 6, title_y + 6)))
         screen.blit(title_surf, title_surf.get_rect(center=(center_x, title_y)))
-
-        # 3. 副标题
-        subtitle_y = title_y + 70
-        prompt = self.font_subtitle.render("v1.0.3-dev", True, (200, 200, 200))
-        screen.blit(prompt, prompt.get_rect(center=(center_x, subtitle_y)))
 
         # 4. 按钮
         for btn in self.buttons:

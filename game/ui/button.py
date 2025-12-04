@@ -8,7 +8,7 @@ from config.settings import COLOR_WHITE, COLOR_BLACK, COLOR_BLUE
 class Button:
     """可点击的按钮UI组件"""
 
-    def __init__(self, x, y, width, height, text, callback, callback_arg=None, style='primary'):
+    def __init__(self, x, y, width, height, text, callback, callback_arg=None, style='primary', font_size=36):
         """
         初始化按钮
         style: 'primary'(蓝), 'grey'(灰), 'danger'(红), 'transparent'(透明文字)
@@ -24,9 +24,9 @@ class Button:
         # 字体 (请确保 settings.py 里定义了 FONT_PATH，否则这里用 None)
         try:
             from config.settings import FONT_PATH
-            self.font = pygame.font.Font(FONT_PATH, 36)
+            self.font = pygame.font.Font(FONT_PATH, font_size)
         except:
-            self.font = pygame.font.Font(None, 36)
+            self.font = pygame.font.Font(None, font_size)
 
         self.apply_style(style)
 

@@ -25,8 +25,6 @@ class GameOverState:
         start_y = 500
         spacing = 80
 
-        # [修改] 移除了 Restart 按钮，只保留 Main Menu 和 Quit
-
         # 1. 回到主菜单
         self.btn_menu = Button(center_x - 120, start_y, 240, 60, "MAIN MENU", self._to_main_menu)
 
@@ -34,17 +32,10 @@ class GameOverState:
         self.btn_quit = Button(center_x - 120, start_y + spacing, 240, 60, "QUIT", self._quit_game)
 
     def _load_background(self):
-        try:
-            bg_path = ASSETS.get('bg_menu')
-            if bg_path:
-                self.background = pygame.image.load(bg_path)
-                self.background = pygame.transform.scale(self.background, (WINDOW_WIDTH, WINDOW_HEIGHT))
-                dark = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
-                dark.fill((0, 0, 0))
-                dark.set_alpha(180)
-                self.background.blit(dark, (0,0))
-        except:
-            self.background = None
+        self.background = pygame.transform.scale(
+            pygame.image.load(ASSETS['bg_game_over']),
+            (WINDOW_WIDTH, WINDOW_HEIGHT)
+        )
 
     def _to_main_menu(self):
         """回到主菜单"""
@@ -55,21 +46,6 @@ class GameOverState:
         """退出程序"""
         pygame.quit()
         sys.exit()
-
-    """
-    GameOverState 是在游戏刚启动时（__init__ 里）就被创建出来的。
-    这意味着 GameOverState 的 __init__ 只会在程序启动时运行一次。
-    此时，你的 self.money 是 0。
-    数据需要刷新： 当你玩完第一局，赚了 $500，游戏切换到结算界面。
-    如果有 enter：系统会告诉结算界面：“嘿，这局赚了 $500，快更新显示！” -> 界面显示 $500。
-    如果没有 enter：结算界面还是维持着初始化时的状态 -> 界面永远显示 $0。
-    """
-    def enter(self, **kwargs):
-        if 'money' in kwargs: self.money = kwargs['money']
-        if 'difficulty' in kwargs: self.difficulty = kwargs['difficulty']
-
-    def exit(self):
-        pass
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -92,7 +68,7 @@ class GameOverState:
 
         center_x = WINDOW_WIDTH // 2
 
-        title = self.font_title.render("SHIFT COMPLETE", True, COLOR_GREEN)
+        title = self.font_title.render("GAME OVER", True, COLOR_WHITE)
         title_rect = title.get_rect(center=(center_x, 180))
         screen.blit(title, title_rect)
 

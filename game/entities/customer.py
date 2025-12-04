@@ -1,7 +1,3 @@
-"""
-顾客实体 - 多顾客并行版 (样式封装版)
-"""
-
 import pygame
 import random
 import os
@@ -11,18 +7,14 @@ from game.ui.button import Button
 class Customer:
     """顾客类"""
 
-    def __init__(self, sought_item_type, difficulty='normal', target_x=WINDOW_WIDTH//2):
+    def __init__(self, sought_item_type, target_x=WINDOW_WIDTH//2): # [修改] 移除 difficulty
         self.sought_item_type = sought_item_type
         self.item_data = ITEM_DESCRIPTIONS.get(sought_item_type, {})
-        self.difficulty = difficulty
 
         self.description = self._generate_description()
 
-        base_patience = CUSTOMER_WAIT_TIME
-        if difficulty == 'chill': self.max_wait_time = base_patience * 1.5
-        elif difficulty == 'relax': self.max_wait_time = base_patience * 1.2
-        elif difficulty == 'mayhem': self.max_wait_time = base_patience * 0.7
-        else: self.max_wait_time = base_patience
+        # [修改] 直接使用全局定义的等待时间
+        self.max_wait_time = CUSTOMER_WAIT_TIME
 
         self.wait_time = 0
         self.patience = 1.0
@@ -31,7 +23,7 @@ class Customer:
         self.x = target_x
         self.y = -100
         self.target_y = CUSTOMER_Y
-        self.speed = 300
+        self.speed = 400
 
         self.state = 'walking_in'
 
@@ -45,9 +37,7 @@ class Customer:
         self.font = pygame.font.Font(FONT_PATH, 24)
         self.font_small = pygame.font.Font(FONT_PATH, 20)
 
-        # --- [修改] 使用封装好的灰色样式 ---
-        # 直接传入 style='grey'，不需要手动设颜色了
-        self.reject_button = Button(0, 0, 150, 35, "Don't Have", None, style='grey')
+        self.reject_button = Button(0, 0, 150, 35, "Don't Have", None, style='grey', font_size=24)
 
     @property
     def is_arrived(self):
@@ -70,7 +60,6 @@ class Customer:
         return random.choice(descriptions)
 
     def _load_resources(self):
-        # 1. 加载顾客
         try:
             customer_images = [
                 'npc_1', 'npc_2', 'npc_3', 'npc_4',
@@ -87,7 +76,6 @@ class Customer:
             self.image.fill((150, 150, 200))
             pygame.draw.circle(self.image, (255, 200, 150), (50, 50), 40)
 
-        # 2. 加载气泡背景
         try:
             bubble_path = 'assets/images/icons/bubble_box.png'
             if os.path.exists(bubble_path):
@@ -106,11 +94,8 @@ class Customer:
             self.wait_time += dt
             self.patience = max(0, 1.0 - (self.wait_time / self.max_wait_time))
 
-            # --- [修改] 更新按钮位置 (正下方居中) ---
-            dialog_width = 240
-            dialog_height = 120
-
             # 气泡底部Y = 顾客头顶Y + 气泡高度
+            dialog_height = 120
             bubble_bottom_y = 200 + dialog_height
 
             # 按钮居中：顾客X - 按钮宽的一半
@@ -138,13 +123,11 @@ class Customer:
             screen.blit(self.image, image_rect)
 
         if self.dialog_visible:
-            # 定义对话框大小
             dialog_width = 268
             dialog_height = 135
             dialog_x = self.x - dialog_width // 2
             dialog_y = 205
 
-            # --- 绘制背景 ---
             if self.bubble_image:
                 bubble_scaled = pygame.transform.scale(self.bubble_image, (dialog_width, dialog_height))
                 screen.blit(bubble_scaled, (dialog_x, dialog_y))
@@ -152,7 +135,6 @@ class Customer:
                 pygame.draw.rect(screen, COLOR_WHITE, (dialog_x, dialog_y, dialog_width, dialog_height), border_radius=10)
                 pygame.draw.rect(screen, COLOR_BLACK, (dialog_x, dialog_y, dialog_width, dialog_height), 2, border_radius=10)
 
-            # --- 绘制文字 (垂直居中) ---
             lines = self._wrap_text(self.description, self.font, dialog_width - 30)
             line_height = 25
             total_text_height = len(lines) * line_height
@@ -164,7 +146,6 @@ class Customer:
                 text_rect = text.get_rect(centerx=dialog_x + dialog_width//2, top=text_start_y + i * line_height)
                 screen.blit(text, text_rect)
 
-            # --- 绘制耐心条 ---
             bar_w = dialog_width - 100
             bar_x = dialog_x + 45
             bar_y = dialog_y + dialog_height - 35
@@ -174,7 +155,6 @@ class Customer:
             if fill > 0:
                 pygame.draw.rect(screen, self.get_patience_color(), (bar_x, bar_y, fill, 10), border_radius=4)
 
-            # --- 绘制按钮 ---
             self.reject_button.render(screen)
 
     def _wrap_text(self, text, font, max_width):
