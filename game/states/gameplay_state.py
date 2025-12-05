@@ -17,7 +17,7 @@ class GameplayState:
         self.game_manager = game_manager
         self.money = 0
         self.shift_time = 0
-        self.shift_duration = 10
+        self.shift_duration = 60
         if 'money' in game_manager.game_data:
             self.money = game_manager.game_data['money']
 
@@ -76,6 +76,7 @@ class GameplayState:
         self._spawn_customer()
         try:
             pygame.mixer.music.load('assets/sounds/bgm_gameplay.mp3')
+            pygame.mixer.music.set_volume(0.7)
             pygame.mixer.music.play(-1)
         except: pass
 
