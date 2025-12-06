@@ -25,7 +25,7 @@ class GameplayState:
         self.game_manager = game_manager
         self.money = 0
         self.shift_time = 0
-        self.shift_duration = 180
+        self.shift_duration = 5
         # TODO: an extension for next update
         #if 'money' in game_manager.game_data:
         #    self.money = game_manager.game_data['money']
@@ -86,7 +86,7 @@ class GameplayState:
         self._spawn_item_on_conveyor()
         self._spawn_customer()
         try:
-            pygame.mixer.music.load('assets/sounds/sfx_bg.mp3')
+            pygame.mixer.music.load('assets/sounds/bgm_play.mp3')
             pygame.mixer.music.set_volume(0.4)
             pygame.mixer.music.play(-1)
         except Exception as e:
