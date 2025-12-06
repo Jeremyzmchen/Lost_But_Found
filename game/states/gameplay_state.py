@@ -25,7 +25,7 @@ class GameplayState:
         self.game_manager = game_manager
         self.money = 0
         self.shift_time = 0
-        self.shift_duration = 5
+        self.shift_duration = 180
         # TODO: an extension for next update
         #if 'money' in game_manager.game_data:
         #    self.money = game_manager.game_data['money']
@@ -63,7 +63,8 @@ class GameplayState:
         self.hovered_item = None  # for tooltip
         self.font_small = pygame.font.Font(FONT_PATH, 24)
         self.call_police_btn = Button(1430, 570, 130, 70,
-                                      "Call Police", None, style='danger', font_size=27)
+            "Call Police", None, style='danger', font_size=27
+        )
 
         # 5. Initialize sound effect
         self.sfx_money = None
@@ -71,8 +72,12 @@ class GameplayState:
         try:
             self.sfx_money = pygame.mixer.Sound('assets/sounds/sfx_money.wav')
             self.sfx_deny = pygame.mixer.Sound('assets/sounds/sfx_deny.mp3')
-            self.sfx_money.set_volume(0.8)
-            self.sfx_deny.set_volume(0.8)
+            self.sfx_click = pygame.mixer.Sound('assets/sounds/sfx_click.wav')
+            self.sfx_put = pygame.mixer.Sound('assets/sounds/sfx_put.wav')
+            self.sfx_click.set_volume(0.2)
+            self.sfx_put.set_volume(0.1)
+            self.sfx_money.set_volume(1.0)
+            self.sfx_deny.set_volume(0.6)
         except Exception as e:
             print(f"Failed to load the sfx: {e}")
 
@@ -123,16 +128,19 @@ class GameplayState:
         Handles player input events (Mouse clicks, dragging, and releasing).
         """
         mouse = pygame.mouse.get_pos()
-        self.call_police_btn.update(mouse)  # for hover
+        self.call_police_btn.update(mouse)
+
         # Calculate the offset to prevent drift
         if event.type == pygame.MOUSEMOTION and self.dragging_item:
-            self.dragging_item.set_position(mouse[0] - self.drag_offset[0], mouse[1] - self.drag_offset[1])
+            self.dragging_item.set_position(mouse[0] - self.drag_offset[0],
+                                            mouse[1] - self.drag_offset[1])
             return
 
         # 1. Click
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             # -1.1. First handle: click 'call police' button
             if self.call_police_btn.handle_click(mouse):
+                self.sfx_click.play()
                 # Determine whether there is a police
                 has_police = any(isinstance(c, Police) for c in self.customers)
                 self._spawn_popup(mouse[0], mouse[1], "Police is here!",
@@ -143,11 +151,13 @@ class GameplayState:
             clicked_customer = next((c for c in self.customers if c.is_arrived
                                      and c.reject_button.handle_click(mouse)), None)
             if clicked_customer:
+                self.sfx_click.play()
                 self._handle_rejection(clicked_customer)
                 return
 
             # -1.3. Then handle: player select items
             item = next((i for i in reversed(self.conveyor_items) if i.contains_point(mouse)), None)
+            self.sfx_click.play()
             # -1.3.1. Check item in conveyor belt first, then desk
             if item:
                 item.on_conveyor = False
@@ -164,6 +174,7 @@ class GameplayState:
 
         # 2. Release
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1 and self.dragging_item:
+            self.sfx_put.play()
             self.dragging_item.is_selected = False
 
             # -2.1. Check whether there is a npc receiving the item
@@ -388,6 +399,7 @@ class GameplayState:
                 return True
             else:
                 self._spawn_popup(police.x, police.y + 50, "Need Case Note!", COLOR_RED)
+                self.sfx_deny.play()
                 return False
 
         # Stage two
@@ -406,6 +418,7 @@ class GameplayState:
             else:
                 self.money += PENALTY_WRONG
                 self._spawn_popup(police.x, police.y - 50, "Wrong Item!", COLOR_RED)
+                self.sfx_deny.play()
                 self._remove_customer(police)
                 return False
 
@@ -415,7 +428,6 @@ class GameplayState:
         """player click the 'don't have' button"""
         note = StickyNote(c.x, 350, c.sought_item_type)
         self.inventory_manager.add_item_to_desk(note)
-        self._spawn_popup(c.x, c.y + 50, "Filed Case", COLOR_WHITE)
         self._remove_customer(c)
 
     def _spawn_popup(self, x, y, text, c=COLOR_WHITE):
