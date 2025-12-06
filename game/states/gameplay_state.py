@@ -77,8 +77,8 @@ class GameplayState:
             self.sfx_deny = pygame.mixer.Sound('assets/sounds/sfx_deny.mp3')
             self.sfx_click = pygame.mixer.Sound('assets/sounds/sfx_click.wav')
             self.sfx_put = pygame.mixer.Sound('assets/sounds/sfx_put.wav')
-            self.sfx_click.set_volume(0.2)
-            self.sfx_put.set_volume(0.1)
+            self.sfx_click.set_volume(0.5)
+            self.sfx_put.set_volume(0.15)
             self.sfx_money.set_volume(1.0)
             self.sfx_deny.set_volume(0.6)
         except Exception as e:
@@ -95,7 +95,7 @@ class GameplayState:
         self._spawn_customer()
         try:
             pygame.mixer.music.load('assets/sounds/bgm_play.mp3')
-            pygame.mixer.music.set_volume(0.4)
+            pygame.mixer.music.set_volume(0.3)
             pygame.mixer.music.play(-1)
         except Exception as e:
             print(f"Failed to play BGM: {e}")
