@@ -7,6 +7,7 @@ import sys
 from config.settings import *
 from game.ui.button import Button
 
+
 class GameOverState:
     def __init__(self, game_manager):
         self.game_manager = game_manager

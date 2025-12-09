@@ -6,9 +6,7 @@ import sys
 from game.game_manager import GameManager
 
 def main():
-    """
-    main entry point
-    """
+    """main entry point"""
     # Instantiate GameManager
     game = GameManager()
 

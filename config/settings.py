@@ -38,7 +38,7 @@ SOUNDS = {
 
 # Game parameters
 # NPC setting
-CUSTOMER_INTERVAL = 7.0      # NPC spawn interval
+CUSTOMER_INTERVAL = 6.0      # NPC spawn interval
 CUSTOMER_SLOTS = [750, 1050, 1350]
 CUSTOMER_Y = 120    # Stop at this Y
 CUSTOMER_WAIT_TIME = 25.0    # Customer wait time
@@ -62,7 +62,7 @@ DESK_AREA = {'x': 270, 'y': 350, 'width': 1200, 'height': 500}
 
 # Conveyor setting
 CONVEYOR_SPEED = 400
-CONVEYOR_PAUSE_DURATION = 10.0
+CONVEYOR_PAUSE_DURATION = 12.0
 CONVEYOR_PAUSE_TRIGGER_Y = 270
 CONVEYOR_CENTER_X = 140      # Set center_x
 CONVEYOR_WIDTH = 180         # Set width

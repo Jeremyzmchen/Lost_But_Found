@@ -56,9 +56,6 @@ class HUD:
         # Format money with dollar sign
         money_str = f"${int(money)}"
 
-        # ==========================================
-        # Step 1: Render time HUD
-        # ==========================================
         # Draw background icon
         screen.blit(self.bg_time, self.time_pos)
 
@@ -74,9 +71,6 @@ class HUD:
         # Draw text
         screen.blit(time_surf, time_text_rect)
 
-        # ==========================================
-        # Step 2: Render money HUD
-        # ==========================================
         # Draw background icon
         screen.blit(self.bg_money, self.money_pos)
 

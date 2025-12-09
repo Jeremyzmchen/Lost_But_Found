@@ -21,26 +21,27 @@ class GameplayState:
         """
         Args:
             game_manager: manage game status and data
+            Initialize data, npc, item, ui, sfx
         """
         # 1. Initialize base data
         self.game_manager = game_manager
         self.money = 0
         self.shift_time = 0
-        self.shift_duration = 120
+        self.shift_duration = 120   # Round time
 
         # 2. Initialize core game system
         self.inventory_manager = InventoryManager()
-        self.customers = []
-        self.customer_slots = [None] * len(CUSTOMER_SLOTS)
-        self.customer_timer = 0
+        self.customers = []     # customer list in game
+        self.customer_slots = [None] * len(CUSTOMER_SLOTS)  # number of customer slots
+        self.customer_timer = 0     # calculate customer time in game
         self.customer_interval = CUSTOMER_INTERVAL  # interval of generation
-        self.conveyor_items = []
+        self.conveyor_items = []    # item list in game
         self.item_spawn_timer = 0
         self.item_spawn_interval = ITEM_SPAWN_INTERVAL
 
         # 3. Initialize batch management
         self.current_batch_id = 0
-        self.batch_pause_states = {}    # eg, key:5, value:{'paused': True, 'timer': 1.2, 'triggered': True}
+        self.batch_pause_states = {}    # eg, key:5, value:{'paused': True, 'timer': 3, 'triggered': True}
 
         # 4. Initialize ui
         self.conveyor_texture = None
@@ -51,14 +52,13 @@ class GameplayState:
         self.popups = []
         self._load_background()
         self._load_conveyor_texture()
-        self.label_image = None
         try:
             self.label_image = pygame.image.load('assets/images/icons/label.png')
         except Exception as e:
             print(f"Failed to load the conveyor belt image: {e}")
         self.dragging_item = None
-        self.drag_offset = (0, 0)  # prevent items from drifting
-        self.hovered_item = None  # for tooltip
+        self.drag_offset = (0, 0)   # prevent items from drifting
+        self.hovered_item = None    # for tooltip
         self.font_small = pygame.font.Font(FONT_PATH, 24)
 
         self.call_police_btn = Button(1430, 570, 130, 70,
@@ -72,8 +72,6 @@ class GameplayState:
         )
 
         # 5. Initialize sound effect
-        self.sfx_money = None
-        self.sfx_deny = None
         try:
             self.sfx_money = pygame.mixer.Sound(SOUNDS['sfx_money'])
             self.sfx_deny = pygame.mixer.Sound(SOUNDS['sfx_deny'])
@@ -81,12 +79,12 @@ class GameplayState:
             self.sfx_pick = pygame.mixer.Sound(SOUNDS['sfx_pick'])
             self.sfx_drop = pygame.mixer.Sound(SOUNDS['sfx_drop'])
             self.sfx_spray = pygame.mixer.Sound(SOUNDS['sfx_spray'])
-            
+
+            self.sfx_money.set_volume(1.0)
+            self.sfx_deny.set_volume(0.6)
             self.sfx_click.set_volume(0.8)
             self.sfx_pick.set_volume(0.8)
             self.sfx_drop.set_volume(0.2)
-            self.sfx_money.set_volume(1.0)
-            self.sfx_deny.set_volume(0.6)
             self.sfx_spray.set_volume(1.0)
         except Exception as e:
             print(f"Failed to load the sfx: {e}")
@@ -98,8 +96,6 @@ class GameplayState:
         """
         Generate the first batch of items and customer
         """
-        self._spawn_item_on_conveyor()  # generate the first batch
-        self._spawn_customer()  # generate the first customer
         # Play BGM
         try:
             pygame.mixer.music.load(SOUNDS['bgm_menu'])
@@ -108,19 +104,17 @@ class GameplayState:
         except Exception as e:
             print(f"Failed to play BGM: {e}")
 
+        self._spawn_item_on_conveyor()  # generate the first batch
+
     def _load_background(self):
-        """
-        load background image
-        """
+        """load background image"""
         self.background = pygame.transform.scale(
             pygame.image.load(ASSETS['bg_main']),
             (WINDOW_WIDTH, WINDOW_HEIGHT)
         )
 
     def _load_conveyor_texture(self):
-        """
-        load conveyor_texture image
-        """
+        """load conveyor_texture image"""
         try:
             self.conveyor_texture = pygame.image.load('assets/images/conveyor_belt.png')
             self.belt_width = self.conveyor_texture.get_width()
@@ -128,12 +122,11 @@ class GameplayState:
             print(f"Failed to load the conveyor belt image: {e}")
 
     def _end_shift(self):
-        """
-        state shift, game over
-        """
+        """state shift, game over"""
         from game.game_manager import GameState
         self.game_manager.change_state(GameState.GAME_OVER, money=self.money)
 
+#--------------------------------------handle event, update, render------------------------------------------------
     def handle_event(self, event):
         """
         Handles player input events (Mouse clicks, dragging, and releasing).
@@ -143,26 +136,26 @@ class GameplayState:
         self.menu_btn.update(mouse)
         self.spray_btn.update(mouse)
 
-        # Calculate the offset to prevent drift
+        # Check mouse move first
         if event.type == pygame.MOUSEMOTION and self.dragging_item:
             self.dragging_item.set_position(mouse[0] - self.drag_offset[0],
                                             mouse[1] - self.drag_offset[1])
             return
 
-        # 1. Click
+        # 1. Click (handle button click, select item, dragging item, release motion)
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            # Check if player wants to back to menu
+            # 1.1 Handle button first: Check if player wants to back to menu
             if self.menu_btn.handle_click(mouse):
                 from game.game_manager import GameState
                 self.game_manager.change_state(GameState.MENU)
                 return
 
-            # [新增] 处理喷雾按钮点击 (Spray Button Click)
+            # 1.2 Handle button first: Spray Button Click
             if self.spray_btn.handle_click(mouse):
                 self._handle_spray_click()
                 return
 
-            # -1.1. First handle: click 'call police' button
+            # 1.3 Handle button first: click 'call police' button
             if self.call_police_btn.handle_click(mouse):
                 self.sfx_click.play()
                 # Determine whether there is a police
@@ -171,7 +164,7 @@ class GameplayState:
                                   COLOR_WHITE) if has_police else self._spawn_police()
                 return
 
-            # -1.2. Then handle: player click on 'don't have' button
+            # 1.4 Handle button first: Then handle: player click on 'don't have' button
             clicked_customer = next((c for c in self.customers if c.is_arrived()
                                      and c.reject_button.handle_click(mouse)), None)
             if clicked_customer:
@@ -179,10 +172,10 @@ class GameplayState:
                 self._handle_rejection(clicked_customer)
                 return
 
-            # -1.3. Then handle: player select items
+            # 2.1 Handle item second: player select items
             item = next((i for i in reversed(self.conveyor_items) if i.contains_point(mouse)), None)
             self.sfx_pick.play()
-            # -1.3.1. Check item in conveyor belt first, then desk
+            # -2.1.1. Check item in conveyor belt first, then desk
             if item:
                 item.on_conveyor = False
                 self.conveyor_items.remove(item)
@@ -190,13 +183,13 @@ class GameplayState:
                 item = self.inventory_manager.get_item_at_position(mouse)
                 if item: self.inventory_manager.remove_item(item)
 
-            # -1.4. Finally handle dragging
+            # 3.1 Handle dragging finally
             if item:
                 self.dragging_item = item
                 self.dragging_item.is_selected = True
                 self.drag_offset = (mouse[0] - item.x, mouse[1] - item.y)
 
-        # 2. Release
+        # 2. Release (check delivery process)
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1 and self.dragging_item:
             # dragging stop, release
             self.sfx_drop.play()
@@ -209,7 +202,7 @@ class GameplayState:
             target_customer = next(
                 (c for c in self.customers if c.is_arrived() and c.get_delivery_rect().collidepoint(mouse)), None)
 
-            # -2.2. Check delivery process
+            # -2.2. Check delivery process(if fail, back to desktop)
             if not (target_customer and self._handle_delivery(target_customer, self.dragging_item)):
                 self.dragging_item.set_position(mouse[0] - self.drag_offset[0], mouse[1] - self.drag_offset[1])
                 self.inventory_manager.add_item_to_desk(self.dragging_item)
@@ -217,7 +210,7 @@ class GameplayState:
 
     def update(self, dt):
         """update game status"""
-        # 1.Check time
+        # 1.Check round time
         self.shift_time += dt
         if self.shift_time >= self.shift_duration: self._end_shift(); return
 
@@ -320,7 +313,7 @@ class GameplayState:
         if self.hovered_item and not self.dragging_item: self._render_item_tooltip(screen)
 
 
-    # private_Methods
+    #--------------------------------------------private_Methods------------------------------------------------
     def _spawn_item_on_conveyor(self):
         """
         Item Batch Spawning System
@@ -363,8 +356,7 @@ class GameplayState:
         if not empty_cst_space: return
         idx = random.choice(empty_cst_space)
 
-        # [修改] 独立的小偷生成逻辑
-        # 使用 THIEF_SPAWN_PROB (例如 0.25)
+        # Spawn special npc first
         if random.random() < THIEF_SPAWN_PROB:
             t = Thief(CUSTOMER_SLOTS[idx])
             self.customer_slots[idx] = t
@@ -407,33 +399,26 @@ class GameplayState:
         self.customers.append(p)
 
     def _handle_spray_click(self):
-        """
-        玩家点击了喷雾按钮。
-        逻辑：全屏索敌，找到小偷并扣血。
-        """
-        # 播放音效
+        """Handle spray button click"""
         self.sfx_spray.play()
 
-        # 1. 查找场上是否有小偷
-        # (可能有多个，如果有多个就都喷，或者只喷第一个，这里逻辑是都喷)
+        # Get thieves(list) in game
         thieves = [c for c in self.customers if isinstance(c, Thief)]
 
         if not thieves:
-            # 没小偷还乱按 -> 惩罚
+            # If click wrongly, penalty
             self.money += PENALTY_CLICK
             self._spawn_popup(1500, 410, "No Thief!", COLOR_WHITE)
             return
 
-        # 2. 对小偷造成伤害
+        # Or hit all thieves
         for t in thieves:
-            is_dead = t.take_damage()  # 扣1血
+            is_dead = t.take_damage()  # Get the result info
 
             if is_dead:
-                # 血量归零，赶走
-                self._spawn_popup(t.x, t.y + 50, "Begone!", COLOR_WHITE)
+                self._spawn_popup(t.x, t.y + 50, "Run away!", COLOR_WHITE)
                 self._remove_customer(t)
             else:
-                # 还没死，飘字提示剩余次数
                 self._spawn_popup(t.x, t.y + 50, "Hit!", COLOR_WHITE)
 
     def _handle_delivery(self, c, item):
@@ -518,7 +503,7 @@ class GameplayState:
         for y in range(-tex_h, WINDOW_HEIGHT + tex_h, tex_h):
             screen.blit(self.conveyor_texture, (draw_x, y + y_offset))
 
-    # TODO AI Calculate the position of the conveyor belt texture
+    # TODO AI Calculate the position of the item shadow
     def _draw_item_shadow(self, screen, item, off=(5,5), sc=1.0):
         """UI, Draw shadow for item"""
         if not item.image: return
@@ -532,7 +517,7 @@ class GameplayState:
             else: screen.blit(shad, (item.x+off[0], item.y+off[1]))
         except: pass
 
-    # TODO AI Calculate the position of the conveyor belt texture
+    # TODO AI Calculate the position of the tooltip
     def _render_item_tooltip(self, screen):
         """UI, Draw item tooltip"""
         if not self.hovered_item: return

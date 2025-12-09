@@ -88,7 +88,7 @@ class StickyNote(Item):
         id_text = font_id.render(f"ID: {self.case_id}", True, COLOR_BLACK)
         self.image.blit(id_text, (10, 25))
 
-        font_clue = pygame.font.SysFont(FONT_PATH, 24)
+        font_clue = pygame.font.SysFont(FONT_PATH, 16)
 
         text = font_clue.render(self.clue_text, True, COLOR_BLACK)
         text_rect = text.get_rect(center=(self.width // 2, self.height // 2 + 15))
