@@ -217,6 +217,7 @@ class GameplayState:
         # 2.Update spawn_item state
         self.item_spawn_timer += dt
         if self.item_spawn_timer >= self.item_spawn_interval:
+            # spawn a new batch item
             self.item_spawn_timer = 0; self._spawn_item_on_conveyor()
 
         # 3.Items on conveyor(batch, pause)
@@ -236,16 +237,17 @@ class GameplayState:
 
         # 4.Items on conveyor(move, remove)
         removes = []
-        for i in self.conveyor_items[:]:
+        for i in self.conveyor_items[:]:    # for all lists, I copy it to prevent modify error
             if i.on_conveyor:   # check whether item is not being dragged
                 paused = self.batch_pause_states.get(i.batch_id, {'paused': False})
-                # calling 'item' module method, checking items is in screen or not
+                # return True(be selected or out of screen) False(still on conveyor)
                 if i.update_conveyor_movement(dt, CONVEYOR_SPEED, paused):
                     removes.append(i)
         for r in removes: self.conveyor_items.remove(r)
 
         # 5.Update spawn_customer state
         self.customer_timer += dt
+        # Time to spawn new customer
         if self.customer_timer >= self.customer_interval:
             if None in self.customer_slots: self._spawn_customer(); self.customer_timer = 0
             else: self.customer_timer -= 2    # delay 2seconds and check again
@@ -262,8 +264,8 @@ class GameplayState:
         mouse = pygame.mouse.get_pos()
         if not self.dragging_item:
             self.hovered_item = None
-            # Check conveyor first, then desk
-            for i in reversed(self.conveyor_items):
+            # Check conveyor first, then desktop
+            for i in self.conveyor_items:
                 if i.contains_point(mouse): self.hovered_item = i; break
             if not self.hovered_item:
                 self.hovered_item = self.inventory_manager.get_item_at_position(mouse)
@@ -277,7 +279,7 @@ class GameplayState:
                     should_scroll = True; break
         if should_scroll: self.scroll_offset += CONVEYOR_SPEED * dt
 
-        # -6.4. Update status of items on desk(collision,physics)
+        # -6.4. Update status of items on desk(collision, physics)
         self.inventory_manager.update(dt)
 
     def render(self, screen):
@@ -288,7 +290,7 @@ class GameplayState:
 
         # 2. Render items
         for i in self.conveyor_items:
-            self._draw_item_shadow(screen, i);
+            self._draw_item_shadow(screen, i)
             i.render(screen)
         for i in self.inventory_manager.desk_items:
             self._draw_item_shadow(screen, i)
@@ -331,7 +333,7 @@ class GameplayState:
 
             # -1.3 Set item attributes
             item.on_conveyor = True
-            item.item_index = i
+            item.item_index = i     # [0, 1, 2] three a batch
             item.batch_id = self.current_batch_id
             if i == CONVEYOR_PAUSE_AT_INDEX:
                 item.is_pause_trigger = True
@@ -351,7 +353,7 @@ class GameplayState:
         Responsible for generating new customers when the counter is idle
         Dynamically adjusts the items based on the current desktop status
         """
-        # 1. Check whether there is empty slot
+        # 1. build a slot pos list,  customer_slots[1:npc4, 2:None, 3:npc6]
         empty_cst_space = [i for i, c in enumerate(self.customer_slots) if c is None]
         if not empty_cst_space: return
         idx = random.choice(empty_cst_space)
@@ -365,10 +367,10 @@ class GameplayState:
 
         # 2. Intelligently assign item request to npc
         desk_items = self.inventory_manager.get_all_items()
-        # -2.1. Remove the sticky notes
+        # -2.1. Exclude the sticky notes
         valid_items = [i for i in desk_items if i.item_type != 'sticky_note']
         # -2.2. Randomly choose an item
-        if valid_items and random.random() < 0.7:
+        if valid_items and random.random() < 0.75:
             item_type = random.choice(valid_items).item_type
         else:
             item_type = random.choice(list(ITEM_DESCRIPTIONS.keys()))
@@ -378,6 +380,7 @@ class GameplayState:
         self.customer_slots[idx] = c; self.customers.append(c)
 
     def _remove_customer(self, c):
+        """Remove customers and Initialize slots"""
         if c in self.customers: self.customers.remove(c)
         if c in self.customer_slots: self.customer_slots[self.customer_slots.index(c)] = None
 
@@ -423,11 +426,11 @@ class GameplayState:
 
     def _handle_delivery(self, c, item):
         """Handle customer's delivery process"""
-        # 1. Check if not customers
+        # 1. Check if is police, calling police related method
         if isinstance(c, Police):
             return self._handle_police_delivery(c, item)
 
-        # 2. Check if item match
+        # 2. If customers, check if item match
         if c.check_item_match(item):
             self.money += REWARD_CORRECT
             self._spawn_popup(c.x, c.y + 100, f"+${REWARD_CORRECT}", COLOR_WHITE)
@@ -452,7 +455,7 @@ class GameplayState:
                 self._spawn_popup(police.x, police.y + 50, "File Accepted.", COLOR_WHITE)
                 return True
             else:
-                self._spawn_popup(police.x, police.y + 50, "Need Case Note!", COLOR_RED)
+                self._spawn_popup(police.x, police.y + 50, "Need Case Note!", COLOR_WHITE)
                 self.sfx_deny.play()
                 return False
 
@@ -460,18 +463,20 @@ class GameplayState:
         elif police.police_state == 'waiting_for_evidence':
             # Check if player delivery the sticky_note again
             if isinstance(item, StickyNote):
-                self._spawn_popup(police.x, police.y - 50, "I have the file.", COLOR_RED)
+                self.sfx_deny.play()
+                self._spawn_popup(police.x, police.y - 50, "I have the file.", COLOR_WHITE)
                 return False
 
             # Check item match
             if item.item_type == police.target_item_type:
                 self.money += REWARD_CORRECT
-                self._spawn_popup(police.x, police.y + 50, "Case Solved!", COLOR_WHITE)
+                self.sfx_money.play()
+                self._spawn_popup(police.x, police.y + 50, f"+{REWARD_CORRECT}", COLOR_WHITE)
                 self._remove_customer(police)
                 return True
             else:
                 self.money += PENALTY_WRONG
-                self._spawn_popup(police.x, police.y - 50, "Wrong Item!", COLOR_RED)
+                self._spawn_popup(police.x, police.y - 50, "Wrong Item!", COLOR_WHITE)
                 self.sfx_deny.play()
                 self._remove_customer(police)
                 return False
