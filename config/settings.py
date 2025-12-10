@@ -38,7 +38,7 @@ SOUNDS = {
 
 # Game parameters
 # NPC setting
-CUSTOMER_INTERVAL = 6.0      # NPC spawn interval
+CUSTOMER_INTERVAL = 5.0      # NPC spawn interval
 CUSTOMER_SLOTS = [750, 1050, 1350]
 CUSTOMER_Y = 120    # Stop at this Y
 CUSTOMER_WAIT_TIME = 25.0    # Customer wait time

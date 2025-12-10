@@ -1,6 +1,6 @@
 """
 Responsible for managing all the core logic
-    1. Game Loop, eg: time, money, batch spawning, game state
+    1. Game Loop, eg: time, money, batch produce, game state
     2. Entity Lifecycle, eg: app / disapp of npcs and items
     3. Story Plot: interaction with police
 """
@@ -27,7 +27,7 @@ class GameplayState:
         self.game_manager = game_manager
         self.money = 0
         self.shift_time = 0
-        self.shift_duration = 120   # Round time
+        self.shift_duration = 90   # Round time
 
         # 2. Initialize core game system
         self.inventory_manager = InventoryManager()
@@ -200,7 +200,8 @@ class GameplayState:
 
             # -2.1. Check whether there is a npc receiving the item
             target_customer = next(
-                (c for c in self.customers if c.is_arrived() and c.get_delivery_rect().collidepoint(mouse)), None)
+                (c for c in self.customers if c.is_arrived()
+                 and c.get_delivery_rect().collidepoint(mouse)), None)
 
             # -2.2. Check delivery process(if fail, back to desktop)
             if not (target_customer and self._handle_delivery(target_customer, self.dragging_item)):
