@@ -1,4 +1,4 @@
-# Lost But Found - Game Dev
+# Lost but Found - Game Dev
 
 <img width="2400" height="1350" alt="image" src="https://github.com/user-attachments/assets/e8956c29-038f-4035-a7bc-3bde6bd8e4e7" />
 
