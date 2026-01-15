@@ -56,15 +56,15 @@
 ```Plaintext
 
 .
-├── assets/             # Game assets (images, sounds, fonts) [cite: 106, 108, 110]
-├── config/             # Global settings and configurations [cite: 133]
+├── assets/             # Game assets (images, sounds, fonts) 
+├── config/             # Global settings and configurations
 ├── game/
-│   ├── entities/       # Character and item classes (Police, Thief, Customer, etc.) [cite: 134, 135, 136, 137, 138, 139]
-│   ├── managers/       # Inventory and game logic managers [cite: 140, 141]
+│   ├── entities/       # Character and item classes (Police, Thief, Customer, etc.)
+│   ├── managers/       # Inventory and game logic managers
 │   ├── states/         # Game state definitions (Menu, Gameplay, Game Over) 
 │   └── ui/             # UI components (Buttons, HUD, Popups) 
-├── test/               # Unit tests for gameplay logic [cite: 153]
-└── start.py            # Main entry point to launch the game [cite: 152]
+├── test/               # Unit tests for gameplay logic
+└── start.py            # Main entry point to launch the game
 ```
 
 ## How to Run
