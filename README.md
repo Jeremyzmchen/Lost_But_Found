@@ -3,7 +3,6 @@
 
 **Lost But Found** is a 2D interactive game developed using Python and the Pygame framework. The game challenges players to manage items, interact with various NPCs, and navigate through a dynamic environment while dealing with game elements like the police and thieves.
 
-<img width="2400" height="1350" alt="image" src="https://github.com/user-attachments/assets/e8956c29-038f-4035-a7bc-3bde6bd8e4e7" />
 
 
 ## Design Thinking
@@ -25,17 +24,6 @@
 
 
 ***Multimedia Integration:***   Supports custom fonts, background music (BGM), and sound effects (SFX).
-
-
-<img width="2371" height="1340" alt="image" src="https://github.com/user-attachments/assets/38aa51ca-4f67-4e89-8534-942b9b174931" />
-
-<img width="2356" height="1340" alt="image" src="https://github.com/user-attachments/assets/7d38f6f2-3b33-4485-a050-a97c55fb7950" />
-
-<img width="2371" height="1340" alt="image" src="https://github.com/user-attachments/assets/60fe5167-f1d5-4bbb-91ab-310a067974eb" />
-
-<img width="2364" height="1340" alt="image" src="https://github.com/user-attachments/assets/84f057c3-85fa-4115-b9f6-3b3863e278d2" />
-
-<img width="2380" height="1340" alt="image" src="https://github.com/user-attachments/assets/36dce22a-2c18-4a80-a60b-f67f5cffdc86" />
 
 
 
